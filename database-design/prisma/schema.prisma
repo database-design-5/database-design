@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  COOKING
+  READY
+  COMPLETED
+  CANCELED
+
+  @@map("order_status_type")
+}
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  LIMITED
+
+  @@map("stock_status_type")
+}
+
+model Cafeteria {
+  cafeteria_id    BigInt   @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  status          String?  @default("OPEN") @db.VarChar(50)
+  location        String?  @db.VarChar(255)
+  operating_hours String?  @db.VarChar(100)
+  created_at      DateTime? @default(now()) @db.Timestamptz
+
+  managers      Manager[]
+  menus         Menu[]
+  orders        Order[]
+  sales         Sales[]
+
+  @@map("cafeterias")
+}
+
+model Manager {
+  manager_id   String   @id @db.Uuid
+  cafeteria_id BigInt?
+  name         String   @db.VarChar(100)
+  phone_number String?  @db.VarChar(20)
+  created_at   DateTime? @default(now()) @db.Timestamptz
+
+  cafeteria    Cafeteria? @relation(fields: [cafeteria_id], references: [cafeteria_id])
+
+  @@map("managers")
+}
+
+model Customer {
+  customer_id  String   @id @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  name         String?  @db.VarChar(100)
+  phone_number String?  @db.VarChar(20)
+  created_at   DateTime? @default(now()) @db.Timestamptz
+
+  orders        Order[]
+  notifications Notification[]
+  payment_methods PaymentMethod[]
+
+  @@map("customers")
+}
+
+model PaymentMethod {
+  payment_method_id BigInt   @id @default(autoincrement())
+  customer_id       String   @db.Uuid
+  type              String   @db.VarChar(50) // e.g., 'CARD', 'BANK_TRANSFER'
+  provider          String   @db.VarChar(50) // e.g., 'VISA', 'Shinhan'
+  last_four_digits  String   @db.VarChar(4)
+  is_default        Boolean? @default(false)
+  created_at        DateTime? @default(now()) @db.Timestamptz
+
+  customer Customer @relation(fields: [customer_id], references: [customer_id])
+
+  @@map("payment_methods")
+}
+
+model Menu {
+  menu_id      BigInt      @id @default(autoincrement())
+  cafeteria_id BigInt
+  menu_name    String      @db.VarChar(255)
+  price        Decimal     @db.Decimal(10, 2)
+  description  String?
+  image_url    String?     @db.VarChar(255)
+  stock_status StockStatus? @default(IN_STOCK)
+  daily_limit  Int?        @default(100)
+  created_at   DateTime?   @default(now()) @db.Timestamptz
+
+  cafeteria    Cafeteria     @relation(fields: [cafeteria_id], references: [cafeteria_id])
+  order_details OrderDetail[]
+
+  @@map("menus")
+}
+
+model Order {
+  order_id       BigInt      @id @default(autoincrement())
+  customer_id    String      @db.Uuid
+  cafeteria_id   BigInt
+  order_status   OrderStatus? @default(PENDING)
+  total_amount   Decimal     @db.Decimal(10, 2)
+  payment_method String      @db.VarChar(50)
+  created_at     DateTime?   @default(now()) @db.Timestamptz
+
+  customer      Customer      @relation(fields: [customer_id], references: [customer_id])
+  cafeteria     Cafeteria     @relation(fields: [cafeteria_id], references: [cafeteria_id])
+  order_details OrderDetail[]
+  notifications Notification[]
+
+  @@map("orders")
+}
+
+model OrderDetail {
+  order_detail_id BigInt   @id @default(autoincrement())
+  order_id        BigInt?
+  menu_id         BigInt?
+  quantity        Int
+  unit_price      Decimal  @db.Decimal(10, 2)
+  subtotal        Decimal  @db.Decimal(10, 2)
+  created_at      DateTime? @default(now()) @db.Timestamptz
+
+  order Order? @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  menu  Menu?  @relation(fields: [menu_id], references: [menu_id])
+
+  @@map("order_details")
+}
+
+model Sales {
+  sales_id          BigInt   @id @default(autoincrement())
+  cafeteria_id      BigInt?
+  sales_date        DateTime @db.Date
+  total_orders      Int?     @default(0)
+  total_sales       Decimal? @db.Decimal(15, 2) @default(0)
+  menu_sales_data   Json?
+  hourly_sales_data Json?
+  created_at        DateTime? @default(now()) @db.Timestamptz
+
+  cafeteria Cafeteria? @relation(fields: [cafeteria_id], references: [cafeteria_id])
+
+  @@map("sales")
+}
+
+model Notification {
+  notification_id BigInt   @id @default(autoincrement())
+  customer_id     String?  @db.Uuid
+  order_id        BigInt?
+  message         String
+  is_read         Boolean? @default(false)
+  created_at      DateTime? @default(now()) @db.Timestamptz
+
+  customer Customer? @relation(fields: [customer_id], references: [customer_id])
+  order    Order?    @relation(fields: [order_id], references: [order_id])
+
+  @@map("notifications")
+}
