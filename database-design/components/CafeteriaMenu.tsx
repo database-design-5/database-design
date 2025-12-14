@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useCart } from '@/context/CartContext'
 import { useLanguage } from '@/context/LanguageContext'
+import { useToast } from '@/context/ToastContext'
 import Link from 'next/link'
-import { ShoppingCart, Plus, Minus, X, Trash2, ChevronDown, User } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, X, Trash2, ChevronDown, User, LogOut, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import LanguageSelector from './LanguageSelector'
 import NotificationCenter from './NotificationCenter'
 
@@ -34,17 +35,26 @@ type Props = {
 }
 
 export default function CafeteriaMenu({ cafeterias }: Props) {
-    const [selectedCafeteriaId, setSelectedCafeteriaId] = useState<number>(
-        cafeterias[0]?.cafeteria_id || 0
-    )
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+    const supabase = createClient()
+
+    // Find 1947commons cafeteria or fallback to first cafeteria
+    const defaultCafeteria = cafeterias.find(c => c.name === '1947commons') || cafeterias[0]
+
+    // Initialize from URL params or default
+    const initialCafeteriaId = searchParams.get('cafeteria')
+        ? parseInt(searchParams.get('cafeteria')!)
+        : defaultCafeteria?.cafeteria_id || 0
+
+    const [selectedCafeteriaId, setSelectedCafeteriaId] = useState<number>(initialCafeteriaId)
     const { addToCart, removeFromCart, updateQuantity, items, totalItems, totalPrice, clearCart } = useCart()
     const { t } = useLanguage()
+    const { showToast } = useToast()
     const [isCartOpen, setIsCartOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [user, setUser] = useState<any>(null)
-
-    const router = useRouter()
-    const supabase = createClient()
 
     useEffect(() => {
         const checkUser = async () => {
@@ -53,6 +63,17 @@ export default function CafeteriaMenu({ cafeterias }: Props) {
         }
         checkUser()
     }, [supabase])
+
+    // Sync URL params with state on browser back/forward
+    useEffect(() => {
+        const cafeteriaParam = searchParams.get('cafeteria')
+        if (cafeteriaParam) {
+            const id = parseInt(cafeteriaParam)
+            if (id !== selectedCafeteriaId) {
+                setSelectedCafeteriaId(id)
+            }
+        }
+    }, [searchParams])
 
     const selectedCafeteria = cafeterias.find(c => c.cafeteria_id === selectedCafeteriaId)
     
@@ -155,12 +176,50 @@ export default function CafeteriaMenu({ cafeterias }: Props) {
         }
     }
 
+    const handleLogout = async () => {
+        if (confirm(t.mypage.logoutConfirm)) {
+            await supabase.auth.signOut()
+            showToast(t.auth.logout, 'success')
+            router.push('/login')
+        }
+    }
+
+    const handleBack = () => {
+        router.back()
+    }
+
+    const handleCafeteriaChange = (cafeteriaId: number) => {
+        setSelectedCafeteriaId(cafeteriaId)
+        // Update URL with new cafeteria ID
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('cafeteria', cafeteriaId.toString())
+        router.push(`${pathname}?${params.toString()}`)
+    }
+
     return (
         <div className="flex flex-col h-[calc(100vh)] bg-gray-50 text-gray-900 relative">
             {/* Header with Language Selector */}
             <div className="glass sticky top-0 z-20 px-4 py-3 flex justify-between items-center">
-                <h1 className="text-lg font-bold tracking-tight">Cafeteria</h1>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleBack}
+                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        aria-label="Go back"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <h1 className="text-lg font-bold tracking-tight">Cafeteria</h1>
+                </div>
+                <div className="flex items-center gap-2">
+                    {user && (
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-700 hover:text-red-500"
+                            aria-label="Logout"
+                        >
+                            <LogOut size={20} />
+                        </button>
+                    )}
                     <Link href="/mypage" className="p-2 rounded-full hover:bg-gray-100 transition-colors">
                         <User size={20} />
                     </Link>
@@ -175,7 +234,7 @@ export default function CafeteriaMenu({ cafeterias }: Props) {
                     {cafeterias.map((cafeteria) => (
                         <button
                             key={cafeteria.cafeteria_id}
-                            onClick={() => setSelectedCafeteriaId(cafeteria.cafeteria_id)}
+                            onClick={() => handleCafeteriaChange(cafeteria.cafeteria_id)}
                             className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${selectedCafeteriaId === cafeteria.cafeteria_id
                                 ? 'bg-black text-white shadow-lg'
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'

@@ -13,7 +13,8 @@ import {
     ChevronRight,
     Plus,
     Trash2,
-    ShoppingBag
+    ShoppingBag,
+    ArrowLeft
 } from 'lucide-react'
 
 type Order = {
@@ -136,6 +137,10 @@ export default function MyPageClient() {
         }
     }
 
+    const handleBack = () => {
+        router.back()
+    }
+
     const handleAddPaymentMethod = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!user) return
@@ -188,8 +193,17 @@ export default function MyPageClient() {
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Header */}
             <div className="bg-white sticky top-0 z-10 px-6 py-4 shadow-sm flex justify-between items-center">
-                <h1 className="text-xl font-bold text-black">{t.mypage.title}</h1>
-                <button onClick={handleLogout} className="text-black hover:text-red-500">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleBack}
+                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        aria-label="Go back"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <h1 className="text-xl font-bold text-black">{t.mypage.title}</h1>
+                </div>
+                <button onClick={handleLogout} className="p-2 rounded-full hover:bg-gray-100 transition-colors text-black hover:text-red-500">
                     <LogOut size={20} />
                 </button>
             </div>

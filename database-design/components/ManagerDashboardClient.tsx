@@ -43,6 +43,7 @@ type Menu = {
     menu_name: string
     price: number
     description: string | null
+    image_url: string | null
     stock_status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LIMITED'
     daily_limit: number
 }
@@ -116,6 +117,7 @@ export default function ManagerDashboardClient({ initialOrders, initialMenus, ca
         menu_name: '',
         price: 0,
         description: '',
+        image_url: '',
         daily_limit: 100,
         stock_status: 'IN_STOCK'
     })
@@ -177,6 +179,7 @@ export default function ManagerDashboardClient({ initialOrders, initialMenus, ca
                 menu_name: '',
                 price: 0,
                 description: '',
+                image_url: '',
                 daily_limit: 100,
                 stock_status: 'IN_STOCK'
             })
@@ -193,6 +196,7 @@ export default function ManagerDashboardClient({ initialOrders, initialMenus, ca
                     menu_name: menuForm.menu_name,
                     price: menuForm.price,
                     description: menuForm.description,
+                    image_url: menuForm.image_url,
                     daily_limit: menuForm.daily_limit,
                     stock_status: menuForm.stock_status
                 })
@@ -213,6 +217,7 @@ export default function ManagerDashboardClient({ initialOrders, initialMenus, ca
                     menu_name: menuForm.menu_name!,
                     price: menuForm.price!,
                     description: menuForm.description,
+                    image_url: menuForm.image_url,
                     daily_limit: menuForm.daily_limit,
                     stock_status: 'IN_STOCK'
                 })
@@ -738,6 +743,16 @@ export default function ManagerDashboardClient({ initialOrders, initialMenus, ca
                                     className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-black outline-none text-black"
                                     value={menuForm.description || ''}
                                     onChange={e => setMenuForm({ ...menuForm, description: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                                <input
+                                    type="text"
+                                    placeholder="https://example.com/image.jpg"
+                                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-black outline-none text-black"
+                                    value={menuForm.image_url || ''}
+                                    onChange={e => setMenuForm({ ...menuForm, image_url: e.target.value })}
                                 />
                             </div>
                             <div>
